@@ -1,0 +1,55 @@
+# Site wide configuration
+
+title:            Mustafa Hastürk Defteri
+locale:           en_US
+url:              http://localhost:4000
+
+
+# Jekyll configuration
+
+permalink:   /:categories/:title/
+markdown:    kramdown
+highlighter: pygments
+sass:
+  sass_dir: _sass
+  style: compressed
+gems:
+  - jekyll-sitemap
+
+kramdown:
+  auto_ids: true
+  footnote_nr: 1
+  entity_output: as_char
+  toc_levels: 1..6
+  use_coderay: false
+
+
+# Site owner
+owner:
+  name: Mustafa Hastürk
+  avatar: bio-photo.jpg
+  bio: "Bilgisayar Mühendisi, Linux delisi, elektronik müzik dinleyicisi"
+  email: hello@mustafahasturk.com
+  disqus-shortname: muhasturk
+  twitter: muhasturk
+  facebook: muhasturk
+  google:
+    plus: #username
+    analytics: 
+    verify: 
+    ad-client: 
+    ad-slot: 
+  bing-verify: 
+  github: muhasturk
+  stackoverflow: 3022613/muhasturk
+  linkedin: muhasturk
+  instagram: muhasturk
+  lastfm: #muhasturk
+  tumblr: muhasturk
+  pinterest: #muhasturk
+  foursquare: #muhasturk
+  steam: #username
+  dribbble: #username
+
+include: [".htaccess"]
+exclude: ["lib", "config.rb", "Capfile", "config", "log", "Rakefile", "Rakefile.rb", "tmp", "less", "*.sublime-project", "*.sublime-workspace", "test", "spec", "Gruntfile.js", "package.json", "node_modules", "Gemfile", "Gemfile.lock", "LICENSE", "README.md"]

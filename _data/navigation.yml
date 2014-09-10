@@ -1,0 +1,19 @@
+# Site navigation links
+
+- title: Hakkımda
+  url: /about/
+
+- title: Yazılar
+  url: /posts/
+
+- title: Linux/Shell
+  url: /linux/
+
+- title: Python
+  url: /python/
+
+- title: Open-Source
+  url: /open-source
+
+- title: Php
+  url: /php/
