@@ -2,7 +2,8 @@
 
 title:            Mustafa Hastürk Defteri
 locale:           en_US
-url:              http://muhasturk.github.io/
+#url:              http://localhost:4000
+url:              http://muhasturk.github.io
 
 # Jekyll configuration
 
