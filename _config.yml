@@ -16,6 +16,8 @@ sass:
 gems:
   - jekyll-sitemap
 
+
+
 kramdown:
   auto_ids: true
   footnote_nr: 1
@@ -52,8 +54,10 @@ owner:
   dribbble: #username
 
 
-timezone:    Europe/Istanbul
+forkme: Fork me on Github
 
+
+timezone:    Europe/Istanbul
 
 include: [".htaccess"]
 exclude: ["lib", "config.rb", "Capfile", "config", "log", "Rakefile", "Rakefile.rb", "tmp", "less", "*.sublime-project", "*.sublime-workspace", "test", "spec", "Gruntfile.js", "package.json", "node_modules", "Gemfile", "Gemfile.lock", "LICENSE", "README.md"]
