@@ -52,8 +52,9 @@
 <!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
 <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{{ site.url }}/images/apple-touch-icon-144x144-precomposed.png">
 
-<!-- fork-me-on-github -->
+{% if site.forkme.active == true %}<!-- forkme-on-github -->
 <link rel="stylesheet" href="{{ site.url }}/assets/css/gh-fork-ribbon.css">
 <!--[if lt IE 9]>
 <link rel="stylesheet" href="{{ site.url }}/assets/css/gh-fork-ribbon.ie.css">
 <![endif]-->
+{% endif %}

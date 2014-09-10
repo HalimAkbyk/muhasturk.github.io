@@ -54,7 +54,11 @@ owner:
   dribbble: #username
 
 
-forkme: Fork me on Github
+forkme:
+  active: true
+  title: Fork me on Github
+  position: top-right
+
 
 
 timezone:    Europe/Istanbul
