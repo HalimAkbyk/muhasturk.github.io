@@ -57,7 +57,11 @@ owner:
 forkme:
   active: true
   title: Fork me on Github
+  url: https://github.com/muhasturk/muhasturk.github.io/fork
+  # Position value must be one of following
+  # [ top-left, top-right, bottom-left, bottom-right ]
   position: top-right
+
 
 
 
