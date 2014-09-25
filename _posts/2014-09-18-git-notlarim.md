@@ -61,6 +61,27 @@ verilen dosya ile ilişkili commit logları bastırılır.
     git log --graph --decorate
 metin tabanlı grafikler ile ayrıntılı log çıktısı verir.
 
+### Git Checkout
+
+Brancler veya çalışma alanı üzerindeki commitler üzerinde hareket etmeyi sağlar.  
+
+**Branch değiştirmek**
+
+    git checkout <branchName>
+ile verilen dala geçilebilir.
+
+**Belli bir commite geçmek**
+
+    git checkout <commit>
+ile hash değeri veya etiketi verilen commit anına geri dönülür.
+
+**Belli  bir committeki dosyaya geçmek**
+
+    git checkout <commit> <file>
+ile hash değeri veya etiketi verilen commit deki dosyanın halini çalışma alanına yükler.
+
+
+
 
 
 ### Remote ile çalışmak
