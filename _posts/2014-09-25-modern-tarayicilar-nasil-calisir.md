@@ -405,7 +405,7 @@ Bunun anlamı **ruleset** seçici veya virgül ve boşluk ile ayrılmış belli 
 
 ### Webkit CSS Çözümleyici
 
-
+Webkit CSS dilbilgisi dosyalarından otomatik olarak çözümleyici oluşturmak için [Flex ve Bison](http://www.html5rocks.com/en/tutorials/internals/howbrowserswork/#parser_generators "Flex ve Bison") çözümleyici oluşturucularını kullanır. 
 
 
 
