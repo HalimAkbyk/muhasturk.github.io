@@ -313,6 +313,115 @@ Durum **before head** e geçilecektir.  *Body* token alınmış olur. Body token
 
 #### Çözümleme Bittiğindeki Aksiyonlar
 
+Bu aşamada tarayıcı belgeyi etkileşimli olarak işaretleyecek ve çözümleme scriptini *deferred* modda çalıştıracaktır: bu mod belge çözümlemesi tamamlandıktan sonra çalıştırılmalıdır. Belgenin durumu tamamlanmış (*complete*) olarak ayarlanacaktır ve *load* eventi başlatılacaktır.
+
+Ayrıca [HTML5 şartnamesindeki full ağaç yapılandırma ve tokenization algoritmasına](http://www.w3.org/TR/html5/syntax.html#html-parser) bakabilirsiniz.
+
+#### Tarayıcıların Hata Toleransı
+
+Hiçbir zaman HTML sayfalarında geçersiz söz dizimi hatası almazsınız. Tarayıcılar geçersiz içeriği düzeltir ve devam ederler.
+
+Aşağıdaki HTML kodu örnek olarak alalım:
+
+![Error Tolerance Kodu](../images/hbw/error_tolerance.png "Hata Toleransı Kodu")
+
+Bu koda bakarak çok fazla kural ihlali (geçersiz *mytag*, yanlış iç içe geçmiş `p` ve `div` etiketi ve daha fazlası) almam gerekiyor ancak tarayıcı bunu düzgün gösteriyor ve herhangi bir hta verip şikayet etmiyor. Burada yazarın yapmış olduğu birçok HTML hatası düzeltiliyor. 
+
+Hata idaresi tarayıcılarda pek bi tutarlıdır fakat kesinlikle HTML şartnamesinin bir parçası değildir. Tıpkı yer imleri, ileri/geri butonları gibi tarayıcıların uzun yıllar süren geliştirme süreçlerinden biridir. Birçok sitede yer alan ve bilinen geçersiz HTML yapıları vardır. Tarayıcılar bunları belirli bir standarda uygun olarak diğer tarayıcılar ile birlikte düzeltmeye çalışır. 
+
+HTML5 şartnamesi bu gerekliliklerden birazını tanımlar. (Webkit HTML parser sınıfının başında bu durumu çok güzel bir şekilde özetlemektedir.)
+
+
+#####################
+#####################
+
+Birkaç Webkit hata toleransı örneğine bakalım:
+
+##### `<br>` yerine `</br>`
+Bazı siteler `<br>` yerine `</br>` tagını kullanmaktadır. IE ve Firefox ile uyumlu olması için Webkit bunu `<br>` olarak işler. 
+Kod:
+
+![br tag](../images/hbw/br.png)
+
+Unutmayın hata idaresi içseldir. Kullanıcıya herhangi birşey sunulmaz.
+
+##### Başıboş (Stray) Tablo
+
+Başıboş tablo; bir tablo içindeki başka bir tablodur. Ancak tablonun hücresi içinde değildir. 
+
+Örnek olarak;
+![stray table 1](../images/hbw/stray_table_1.png "Stray Table 1")
+
+Webkit hiyerarşiyi iki alt tablo olarak ayırır.
+![Sibling Tables](../images/hbw/sibling_tables.png "Siblling Tables")
+
+Kod:
+![Başıboş Tablo Kodu](../images/hbw/stray_table_code.png "Başıboş Tablo Kodu")
+
+Webkit geçerli elemanın içeriği için yığın kullanmaktadır. İçerdeki tabloyu dış tablonun dışına almaktadır. Bu şekilde tablolar artık kardeş olacaktır. 
+
+##### İç içe Form Elementleri
+
+Kullanıcının başka bir form içinden form eklemesi durumunda ikinci form göz ardı edilir.
+
+Kod:
+
+![Nested Form Elements](../images/hbw/nested_form_elements.png "İç İçe Elementler")
+
+##### Çok Derin Etiket Hiyerarşisi
+İç içe geçmiş aynı tipteki etiketlerden maksimum olarak 20 tanesi geçerlidir ve diğerleri göz ardı edilmektedir.
+
+![Deep Tag Hierarchy](../images/hbw/deep_tag.png "Çok Derin Etiet Hiyerarşisi")
+
+##### Yanlış Yerleştirilmiş body veya html Bitiş Etiketi
+Tarayıcı hiçbir zaman html veya body etiketini kapatmıyor.
+
+![Yanlış Yerleştirilmiş Bitiş Etiketleri](../images/hbw/misplaced_html_or_body_tags.png "Yanlış Yerleştirilmiş Bitiş Etiketleri")
+
+### CSS Çözümleme
+
+Girişteki çözümleme sürecini hatırlıyor musunuz? HTMl in aksine CSS içerik bağımsız dilbilgisi (context free grammar) dir ve girişte tanımlanan çözümleyici tipleri ile çözümlenebilir. Gerçek şu ki [CSS şartnamesi](http://www.w3.org/TR/CSS2/grammar.html "CSS2 Dilbilgisi") CSS in sözlüksel (lexical) ve sözdizimi (syntax) dilbilgisini tanımlar.
+
+Birkaç örneğe bakalım:
+Sözlüksel dilbisi (vocabulary) her token için düzenli ifadeler ile tanımlanır.
+
+![css için düzenli ifade](../images/hbw/css_parsing_regex.png)
+
+*ident* *identifier* için bir kısaltmadır tıpkı sınıf isimleri gibi. *name* ise element id sidir. *#* ile gösterilir.
+
+Sözdizimi dilbilgisi BNF içinde tanımlanır.
+
+![css parsing bnf](../images/hbw/css_parsing_bnf.png)
+
+Açıklama: Kural kümesi bu yapıdadır.
+
+![ruleset](../images/hbw/ruleset.png)
+
+*div.error* ve *a.error* seçicilerdir. Köşeli parantez içerisinde görülen parça kural kümesi (*ruleset*) tarafından uygulanacak olan kuralları içerir. Bu yapı usulen şöyle tanımlanır:
+
+![ruleset definition](../images/hbw/ruleset_definition.png)
+
+Bunun anlamı **ruleset** seçici veya virgül ve boşluk ile ayrılmış belli sayıdaki opsiyonel seçicidir. Ruleset köşeli parantez ve onların içinde tanım veya belli bir sayıdaki virgül ile ayrılmış opsiyonel tanımları içerir. *declaration* ve *selector* takip eden BNF içinde tanımlanacaktır. 
+
+### Webkit CSS Çözümleyici
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
