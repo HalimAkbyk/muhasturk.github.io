@@ -148,13 +148,65 @@ Sözcüksel analiz girdileri, sembollere parçalama işlemidir. Semboller (token
  
 Sözdizim analizi ise o dildeki sözdizimsel kuralların uygulanışıdır.
 
-Genellikle çözümleyiciler yapılacak olan işi iki bileşene ayırırlar. **Lexer** (baen *tokenizer* olarak da adlandırılır) girdileri geçerli sembollere (tokens) parçalama işinden sorumludur. **Parser** belgenin yapısını dilin sözdizimi kurallarına göre analiz ederek **parse tree** inşa etmekten sorumludur. *Lexer* boşluk karakteri ve satır sonları gibi alakasız karakterleri nasıl sıyıracağını / ayıracağını / çıkaracağını bilir.
+Genellikle çözümleyiciler yapılacak olan işi iki bileşene ayırırlar. **Lexer** (bazen *tokenizer* olarak da adlandırılır) girdileri geçerli sembollere (tokens) parçalama işinden sorumludur. **Parser** belgenin yapısını dilin sözdizimi kurallarına göre analiz ederek **parse tree** inşa etmekten sorumludur. *Lexer* boşluk karakteri ve satır sonları gibi alakasız karakterleri nasıl sıyıracağını / ayıracağını / çıkaracağını bilir.
 
 Şekil: **Kaynak Belgeden Parse Ağacına**
 
 ![from source document to parse trees](../images/hbw/parse-tree.png  "Kaynak Belgeden Parse Ağacına")
 
-Sözdizimsel analiz yinelemeli bir süreçtir. Parser genellikle *lexer* a yeni *token* olup olmadığını sorar ve bu *token* ile birlikte bir sözdizimi eşleştirmeye çalışır.
+Sözdizimsel analiz yinelemeli bir süreçtir. Parser genellikle *lexer* a yeni *token* olup olmadığını sorar ve bu *token* ile birlikte bir sözdizimi eşleştirmeye çalışır. Eğer bir eşleşme olursa o düğüm parse ağacına eklenir ve parser bir sonraki token ı bekler.
+
+Eğer bir eşleşme bulunamaz ise parser o tokunu saklar ve eşleşecek olan token bulana kadar yeni token bekler.  Herhangi bir kural eşleşmesi olmaz ise parser bir istisna (exception) fırlatır. Bunun anlamı belge geçerli değildir ve sözdizimi hataları içerir.
+
+#### Çeviri (Translation)
+
+Bir çok durum için **parse tree** son ürün değildir. Sözdizimsel analiz (parsing) genellikle giriş dökümanını farklı bir formata dönüştürme de kullanılır. Örnek olarak derleme (**compilation**). Kaynak kodu makine koduna derleyen derleyici (**compiler**), ilk çözümlemede **parse tree** ye daha sonra da ağacı makine koduna dönüştürür. 
+
+![Compilation Flow](../images/hbw/compilation_flow.png "Compilation Flow")
+
+#### Sözdizimsel Analiz Örneği
+
+Şekil 5 e göre matematiksel ifadeden bir parse ağacı inşa ettik. Basit matematiksel bir dil ifade edelim ve çözümleme/sözdizimsel analiz (parse) sürecini görelim.
+
+
+Kelime hazinesi: Bizim yarattığımız dil tam sayıları, artı ve eksi işaretini içeriyor. 
+
+Sözdizimi:
+1. Dilin oluşturduğu bloklar ifadeler, terimler ve işlemlerdir.
+2. Dilimiz herhangi sayıda ifade içereiblir.
+3. Terimler işlemler ile bir araya gelerek ifadeleri oluştururlar. 
+4. İşlemler artı veya eksidir. 
+5. Terimler bir tamsayı veya ifadedir. 
+
+Bu girişi analiz edelim. ` 2 + 3 -1 `
+İlk alt sözcük `2` dir ve kural beşe göre bu bir ifadedir. Devamı ise ` 2 + 3 ` dür ve bu da kural 3 ile eşleşir. Bir sonraki eşleşme girişin son isabeti olmalıdır. ` 2 + 3 - 1 ` bir ifadedir çünkü biz çoktan ` 2 + 3 ` ün bir terim olduğunu biliyoruz. Elimizde bir sonraki terimi bir işlem ile birleştiren bir terim bulunmaktadır. ` 2 +  + ` herhangi bir kural ile eşleşmediği için geçersiz bir giriş olacaktır. 
+
+#### Sözdizimi ve Kelime Dağarcığı için Format Tanımı 
+
+Kelime dağarcığı genellikle [Düzenli İfadeler](http://www.regular-expressions.info/ "Regular Expression") ile ifade edilir.
+
+Örneğin bizim dilimiz aşağıdaki gibi tanımlanmış olsun:
+
+![](../images/hbw/integer_plus_minus.png)
+
+Gördüğünüz gibi tamsayılar düzenli ifadeler olarak tanımlanmıştır. 
+
+Sözdizimi [BNF](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form) olarak adlandırılan bir formatta tanımlanır. Bizim dilimiz böyle tanımlanacaktır. 
+
+![BNF](../images/hbw/bnf.png)
+
+Eğer dilbilgisi **context free grammar** olarak tanımlandı ise o dil **regular parser** lar ile çözümlenebilir. **Context free grammar** ın sezgisel tanımı ise; tamamen **BNF** ile ifade edilebilen dilbilgisidir. Format tanımını için: [İçerikten-bağımsız Dilbilgisi - Vikipedia](http://en.wikipedia.org/wiki/Context-free_grammar)
+
+#### Ayrıştırıcı/Çözümleyicinin Tipleri
+
+
+
+
+
+
+
+
+
 
 
 
