@@ -405,7 +405,306 @@ Bunun anlamı **ruleset** seçici veya virgül ve boşluk ile ayrılmış belli 
 
 ### Webkit CSS Çözümleyici
 
-Webkit CSS dilbilgisi dosyalarından otomatik olarak çözümleyici oluşturmak için [Flex ve Bison](http://www.html5rocks.com/en/tutorials/internals/howbrowserswork/#parser_generators "Flex ve Bison") çözümleyici oluşturucularını kullanır. 
+Webkit CSS dilbilgisi dosyalarından otomatik olarak çözümleyici oluşturmak için [Flex ve Bison](http://www.html5rocks.com/en/tutorials/internals/howbrowserswork/#parser_generators "Flex ve Bison") çözümleyici oluşturucularını kullanır. Ayrıştırıcı (parser) girişinden hatırlayacağınız üzere, Bison, *aşağıdan yukarı* shift-reduce ayrıştırıcı (parser) oluşturur. Firefox manuel olarak yazılmış *yukarıdan aşağı* ayrıştırıcı kullanır. Her iki durumda da CSS dosyaları *StyleSheet* objelerine dönüştürülür. Her obje CSS kurallarını içerir. CSS kural objesi seçici ve bildirim nesnelerini içerir ve diğer objeler CSS dilbilgisi ile ilişkilendirilir.
+
+![Parsing CSS](../images/hbw/parsing_css.png "CSS Çözümleme")
+
+### Scriptlerin ve Stil Sayfalarının İşlenişinin Düzeni
+
+#### Scriptler
+
+Web modeli senkronik olarak yapılır. Geliştirici scriptin çözümlenmiş olmasını bekler ve çözümleyici `<script>` tagına ulaştığında scriptin çabucak çalıştırılmasını ister. Dosyanın çözümlenmesi scriptin işlenmesinin bitmesiyle durur. Script dışardan geliyorsa bu durumda kaynak ağdan alınmalı - bu işlemler aynı anda yapılır, kaynak alındığında çözümleme durur. Bu model uzun yıllar boyunca kullanıldı, ayrıca HTML4 ve 5 için özel olarak kullanıldı. Geliştirici scripte "defer" özelliğini katabilir, bu durum dosya çözümlemesini durdurmaz ve dosyanın çözümlenmesinden sonra işlenmesini sağlar. HTML5 "scripti asyncronous olarak işartle" seçeneğini ekler ve script başka bir birimle çözümlenir ve işlenir.
+
+#### Teorik Sözdizimsel Analiz (Parsing)
+
+Webkit ve Firefoz bu optimizasyonu yaparlar. Scripti işlerken, diğer birim dosyanın kalanını çözümler ve ağdan hangi kaynakların yüklenmesi gerektiğini bulur ve onları yükler. Bu şekilde kaynaklar paralel bağlantıyla yüklenebilir ve genel hız gelişir. Not: speculative çözümleyiciler sadece dış kaynaklı referansları çözümler "external scripts, style sheets and images" gibi: DOM tree yi modife etmez, onu ana çözümleyici çözümler.
+
+#### Stil Sayfaları
+
+Diğer taraftan stil sayfalarının (style sheets) farklı modelleri var. Style sheet ler DOM tree yi değiştirmediğine göre konsept olarak onları beklemenin ve dosya çözümlemesini durdurulmasının anlamı yok. Script in dosya çözümleme aşamasındayken stil hakkında bilgi istemesiyle ilgili bir durum var. Eğer stil yüklenmediyse ve hala çözümlenmediyse script yanlış cevaplar alır ve bu açıkça birçok probleme neden olur. Bu aslında geneldışı görülen ama sıkça görülen bi durumdur. Style sheet hala yükleniyor ve çözümleniyorsa firefox tüm script leri kilitler. Webkit, sheetleri sadece yüklenmemiş stil sheetler tarafından etkilenmiş olabilen belirli stil özelliklerine erişmeye çalışırken kilitler.
+
+### Render Ağaç İnşası
+
+DOM ağacı oluşturulurken, tarayıcı diğer ağacı oluşturur, render ağacını. Bu ağaç görsel elementleri onların gösterileceği şekilde sıraya koyar. Bu, dosyanın görsel bir sunumudur. Bu ağacın amacı içerikleri doğru sırada paint edebilmektir. Firefox render ağacındaki elementleri "frames" diye adlandırır. Webkit "renderer" ya da "render object" terimlerini kullanır. Renderer kendini ve çocuklarını nasıl tasarlayacağını ve paint edeceğini bilir. 
+Webkit in RenderObject sınıfı, renderer lerin ana sınıfı, şu tanımlamaları izler:
+
+![RenderObject Class](../images/hbw/RenderObject_class.png "RenderObject Sınıfı")
+
+CSS2 şartnamesinde söylendiği gibi, her renderer genellikle düğümüün CCS kutusuna tekabül eden rectangular alanı temsil eder. Burda, genişlik, yükseklik ve durum gibi geometrik bilgiler bulunur. 
+
+Kutu tipi, node la ilişkili olan "stil özellikleri" nin "display" değeri tarafından etkilenir. ( style computation seçeneğine bak). Display özelliğine göre, buradaki Webkit kodunu, DOM node u için hangi renderer in oluşturulması gerektiğine karar verirken görüyoruz. 
+
+![RenderObject Switch-Case](../images/hbw/RenderObject_switch_case.png)
+
+Element tipi şu şekilde de ele alınabilir: mesela, form kontrol ve masalarının özel frame leri vardır. Webkit te eğer element özel renderer oluşturmak istiyorsa `createRenderer( )` metodunu aşırı sürer. Renderer lar içinde geometrik bilgi olmayan stil objelere işaret ederler. 
+
+#### Render Ağacının DOM Ağacı ile İlişkisi
+
+
+
+###################################
+###################################
+###################################
+
+
+### Tasarım Düzeni (Layout)
+Renderer oluşturulduğunda ve ağaca eklendiğinde o, bir pozisyona ve boyuta sahip olmaz. Bu pozisyon ve boyut değerlerinin hesaplanması tasarım düzeni (**layout**)” ve **reflow** olarak adlandırılır.
+
+HTML tasarım düzeni modeli tabanlı bir akış kullanır. Buradan, akışın çoğu zamanında, tek bir geçişte geometrik hesaplaması yapmasının mümkün olduğu anlamı çıkar. Akıştan sonraki elementler, akıştan önceki elementlerin geometrisinin etkilemez. Bu yüzden tasarım düzeni döküman boyunca soldan sağa ve yukarıdan aşağıya ilerleyebilir. HTML tablolarının bir geçişten fazlasına ihtiyaç duyabilmesi gibi istisnalar bulunur.
+
+Kordinat sistemi kök çerçeveyle ilgilidir. Üst ve sol kordinatlar kullanılır.
+
+Tasarım düeni tekrarlı bir işlemdir. HTML dökümanının `<html>` elementine karşılık gelen kök renderer’da başlar. Tasarım düzeni, ihtiyacı olan her renderer’ın geometrik bilgilerinin hesaplanması, çerçeve hiyerarşisinin hepsi ya da bazısı boyunca tekrarlanan bir şekilde devam eder.
+
+Kök renderer’ın pozisyonu (0,0)’dır ve onun boyutları tarayıcı penceresinin görüş alanı,-görünen kısmı kadardır.
+
+Tüm renderer’lar tasarım düzeni ve **reflow** metoduna sahiptir. Her renderer, tasarım düzenine ihtiyaç duyan çoçuklarının tasarım düzeni metodunu çalıştırır.
+
+#### *Dirty Bit* Sistemi
+
+Her küçük değişiklik için tam bir tasarım düzeni yapılmadığı zaman, tarayıcılar *Dirty Bit* sistemini kullanırlar.
+
+İşaretleri değiştirlen ya da ekleme yapılan renderer ve *dirty* gibi çocuklar tasarım düzenine ihtiyaç duyarlar.
+
+İki tane etiket bulunur: *Dirty* ve tasarım düzenine ihtiyaç duyan en az bir çocuğa sahip olan renderer’ın kendisinin onaylıyor olmasına rağmen çocuklarının dirty olmasıdır.
+
+**Dirty Bit:** Memory’de bulunan veya cache’de bulunan CPU tarafından değiştirilmiş ama disk üzerine yazılmamış bitin adıdır.
+
+
+#### Global ve Artan Tasarım Düzeni
+
+Global tasarım düzeni için, tasarım düzeni bütün render ağacında etki gösterebilir. Bu, şu sonuçlar gibi olabilir:
+
+1. Yazı boyutunun (Font Size) değişmesi gibi, bütün render’ı etkileyen global bir biçim(style) değişimi.
+
+2. Boyutlandırılan bir ekranın görüntüsündeki değişimin sonuçları gibi.
+
+Tasarım düzeni artan olabilir. Sadece Dirty Renderer’lar hazırlanmış olacaktır.(Bu, ekstra tasarım düzenine ihtiyaç duyacak bazı hasarlara neden olabilir). Artan tasarım düzeni, renderer’lar dirty olduğunda eş zamansız bir şekilde tetiklenir. Örneğin; DOM ağacına eklendiğinde ve şebekeden ekstra içerik geldikten sonra, yeni renderer’lar render ağacına eklendiğinde.
+
+![](../images/hbw/incremental layout–only dirty.png)
+
+#### Eş Zamanlı ve Eş Zamansız Tasarım Düzeni
+
+Artan tasarım düzeni eş zamansız yapılır. Firefox, artan tasarım düzenleri için, “reflow komutlarını” sıralar ve bir çalıştırıcı program bu komutların icra yığınlarını çalıştırmaya başlar. WebKit ayrıca, artan tasarım düzenini baştan sonra çalıştıran bir zamanlayıcıya sahiptir.(Dirty renderer’lar bu tasarım düzeni dışındadır.)
+
+Scriptler *ofsetHeight* gibi artan tasarım düzenini eş zamansız başlatabilen biçim(style) bilgilerini talep eder(ister).
+
+Global tasarım düzeni genellikle eş zamansız olarak başlatılacak.
+
+Bazen tasarım düzeni, değiştirilen kayan durumlar gibi, bazı özelliklerinden dolayı ilk tasarım düzeninden sonra geri çağırma olarak başlatılır.
+
+**WebKit:** Web tarayıcılarına web sayfalarını işlemesine izin vermek için tasarlanmış bir tarayıcı motorudur.
+
+#### Optimizasyonlar
+
+Tasarım düzeni “Yeniden Boyutlandırma” yapılarak veya renderer pozisyonunda (ve boyutlanmamış) bir değişiklik yapılarak başlatıldığında, o render’ların boyutları ön bellekten (cache) alınır ve tekrar hesaplanmaz.
+
+Bazı durumlarda, sadece bir alt ağaç değiştirildiğinde tasarım düzeni kökten başlatılmaz. Bu değişim yerel olduğunda ve etrafındakileri etkilemediği durumlarda olabilir (yazı alanına yazı girilmesi gibi). Aksi halde her tuş basımında tasarım düzeninin kökten başlatılması tetiklenecektir.
+
+#### Tasarım Düzeni Süreci
+
+Tasarım düzeni genellikle aşağıdaki kalıplara sahiptir:
+
+1. Ata renderer kendi genişliğini belirler.
+
+2. Ata render çocukları kontol eder ve :
+
+    1. Çocuk renderer’a yer verir. (kendi x-y kümesinde)
+
+    2. İhtiyaç duyulduğunda çocuk tasarım düzenini çağırır. -Dirty olanlar için, ya da global tasarım düzeninde olduğumuzda ya da çocukların boylarını hesaplayan diğer bazı sebepler için.
+
+3. Ata, çocukların toplanan boylarını, kenarlara olan uzaklıklarını ve mesafesi kendisinde belirlenmiş olan doldurma boyutunu kullanır. - Bu, ata renderer’ın atası aracılığıyla kullanılacaktır.
+
+4. Tasarım düzeninin yanlış olan dirty bit’i ayarlanır.
+
+Firefox tasarım düzenine bir parametre olarak *state* nesnesini (**nsHTMLReflowState**) kullanır (*reflow* olarak belirlenir). Diğerlerini arasında bu durum ataların genişiliğini kapsar. Firefox tasarım düzeninin çıktısı “metrics” (ölçüme uygun) bir nesnedir (**nsHTMLReflowMetrics**). O, yüksekliği hesaplanmış renderer’ı içerektir.
+
+#### Genişlik Hesaplama
+Renderer’ın genişliği; konteynır bloklarının genişliğinin, rendererın sahip olduğu “width” özellikli biçiminin, marjinlerinin ve sınırlarının kullanılmasıyla hesaplanır. 
+
+Örneğin; aşağıdaki divin genişliği: 
+
+![width calculation div](../images/hbw/width_div_style.png)
+
+Aşağıdaki gibi WebKit aracılıyla hesaplanaca k (*RenderBox* sınıfının *calcWidth* metodu):  
+
+- Konteynır genişliği, sıfır ve konteynırın mevcut genişliğinin (*availableWidth*) maximum boyutu arasındadır. Bu durumda mevcut genişliklik, aşağıda hesaplanan içerik genişliği kadardır.
+
+![width calc 2th pic](../images/hbw/width_calc_2.png)
+
+clientWidth ve clientHeight, sınır ve kaydırma çubuğu haricindeki bir nesnenin içerisini yansıtır.
+
+-  Elementlerin genişliği, “width” biçimiyle nitelendirilir. Bu genişlik konteynır genişliğinin yüzdesinin hesaplanmasıyla mutlak bir değer olarak belirlenecektir.  
+
+-  Yatay sınırlar ve doldurmalar(padding) bu anda hesaplanır.  
+
+Buraya kadar olan kısım, “tercih edilen genişlik” hesaplamarıydı. Şimdi, maksimum ve minimum genişlikler hesaplanacaktır.
+
+Eğer tercih edilen genişlik maksimum genişlikten daha büyükse, maksimum genişlik kullanılır. Eğer minimum genişlikten (en küçük bölünmez birim) daha küçükse, o zaman minimum genişlik kullanılır.  
+
+Bahsedilen değerler, tasarım düzeninin ihtiyaç duyduğu durumda ön belleğe alınır, fakat genişlik değeri değişmez.
+
+#### Satır Sonlandırma
+
+Tasarım düzeninin ortasındaki bir renderer, durdurulma ihtiyacı olduğuna karar verdiğinde, renderer durur ve sonlandırılması gereken tasarım düzeninde atasına yayılır. Ata render ekstra renderlar yaratır ve o, onlarda tasarım düzeni çağırır.
+
+### Çizim (Painting)
+
+Çizim aşamasında render ağacında geçiş yapılır ve içeriği ekranda görüntülemek için renderın **paint()** yöntemi çağrılır. Çizim user interface altyapı bileşenini kullanır.
+
+#### Global ve Artımlı
+
+Layout gibi, çizim de global –tüm ağaç çizimi- ya da artımlı olabilir. Artımlı çizimde, renderların bazıları tüm ağacı etkilemeyecek şekilde değiştirilir. Değiştirilen render, ekrandaki rectangle’yi geçersiz kılar. Bu işletim sisteminde “kirli bölge” görülmesine ve “çizim” olayı oluşturulmasına neden olur. İşletim sistemi bunu akıllıca yapar ve birden fazla bölgede birleştirir. Chrome’da bu daha karmaşıktır çünkü render ana işlemden farklı bir işlemdedir. Chrome bazı ölçülerde işletim sistemini taklit eder. Sunu bu olayları dinler ve mesajı kök rendera devreder. İlişkili rendera ulaşılıncaya kadar ağaçta geçiş yapılır.Kendisini (ve genellikle çocuklarını) yeniden .izecektir.
+
+#### Çizim Sırası
+
+CSS2, [çizim sırasını tanımlar](http://www.w3.org/TR/CSS21/zindex.html). Bu gerçekte [yığın içeriğindeki](http://www.html5rocks.com/en/tutorials/internals/howbrowserswork/#stackingcontext) hangi elemanın yükleneceğinin sırasıdır. Yığınlar, arkadan öne doğru çizildiğinden, sıra çizimi etkiler. Blok renderın yığınlanma sırası şu şekildedir:
+
+- Arkaplan rengi
+- Arkaplan resmi
+- Kenarlık
+- Çocuklar
+- Anahat
+
+#### Firefox Görüntü Listesi
+Firefox render ağacına gider ve çizim rectanglesi için görüntüleme listesi oluşturur. Bu, rectangle için doğru çizim sırasında ilgili renderları içerir (renderın arka planı, kenarlıkları vs.).  Bu şekilde,  ağaç, tüm arkaplanları, sonra tüm resimleri, sonra da kenarlıkları vb.. yeniden çizmek için  birkaç kez yerine yalnızca bir kez geçilmeye ihtiyaç duyacaktır.  
+
+Firefox, tamamen opak öğelerinde altında kalan elementler gibi gizlenecek öğeleri eklemeyerek işlemleri optimize eder.  
+
+#### WebKit Dikdörtgen Depolama
+
+Yeniden çizimden önce. WebKit, Bitmap gibi eski rectangle’leri kaydeder. Sonra sadece yeni ve eski rectangle arasında farkı çizer.  
+
+#### Dinamik Değişiklikler
+
+Tarayıcılar bir değişikliğe yanıt olarak minimum muhtemel eylemler gerçekleştirmeye çalışır. Bu nedenle bir öğenin rengini değiştirmek sadece öğenin yeniden çizilmesine neden olur. Öğe pozisyonundaki değişiklikler öğenin, cocuklarının ve muhtemel kardeşlerinin yeniden çizimine ve düzenine neden olur. Bir DOM düğümü eklemek, nodun yeniden çizimine ve düzenine neden olur. HTML font boyutunun değiştirilmesi gibi büyük değişiklikler, önbellekleri geçersiz kılar ve tüm ağaç yeniden düzenlenir ve çizilir.
+
+#### Rendering Motorlarının İş Parçacıkları (Threads)
+
+Rendering motorları tek iş parçacığından(threads) oluşur. Network işlemleri hariç, neredeyse her şey tek iş parçacığından meydana gelir. Firefox ve Safari’de, bu tarayıcının ana iş parçacığıdır. Chrome’da, ana iş parçacığının tab işlemidir.  
+
+Network işlemleri bir çok paralel iş parçacığıyla gerçekleşebilir. Paralel bağlantı sayısı sınırlıdır (genellikle 2- 6 bağlantı).  
+
+#### Olay Döngüsü (Event Loop)
+
+Tarayıcı ana iş parcacığı bir olay döngüsüdür. İşlemi canlı tutan bir sonsuz döngüdür. Bir olay için bekler (Düzenleme ve çizme işlemi gibi) ve onları işler. Aşağıdaki Firefox’un ana olay döngüsü kodudur.
+
+![Event Loop](../images/hbw/event_loop.png "Event Loop Code")
+
+### CSS2 Görsel Model
+
+#### Kanvas
+
+[CSS2 şartnamesine](http://www.w3.org/TR/CSS21/intro.html#processing-model) göre kanvas terimi  tarayıcının çizdiği içerikte “Biçimlendirme yapısının renderlandığı alan”ı tanımlar. Kanvas alanı her boyut için sınsuzdur ancak tarayıcı görüntüleme çerçevesinin boyutuna dayalı bir başlangıç genişliği seçer.  
+
+www.w3.org/TR/CSS2/zindex.html 'e göre  kanvas, içinde başka bir kanvas içeriyorsa şeffaftır, içermiyorsa kanvasa tarayıcıda tanımlanan renk verilir.
+
+#### CSS Kutu Modeli
+
+CCS kutu modeli, doküman ağacındaki bir eleman için oluşturulan ve sanal formatlama modeline göre ortaya konulan dikdörtgen kutuları tanımlar.  
+
+Her kutu içerik alanına (yazı, resim vs..) ve isteğe bağlı çevresindeki dolgu, kenarlık ve kenar boşluğu alanına sahiptir.  
+
+![CSS2 Kutu Modeli](../images/hbw/css2_box_model.jpg "CSS2 Kutu Modeli")
+
+Her düğüm 0..n gibi kutuları üretir.
+
+Tüm elemanlar oluşturulacak kutu tipini ytanımlayan “display” özelliğine sahiptir. Örnek olarak:  
+
+![after css2 box model](../images/hbw/after_css2_box_model.png)
+
+Varsayılan inline seçeneğidir ancak tarayıcı stil sayfasında varsayılan ayarlanabilir. Örneğin : div elemanı için varsayılan display blocktur.
+Varsayılan stil sayfası örneklerini burada bulabilirsiniz.
+
+www.w3.org/TR/CSS2/sample.html
+
+#### Konumlandırma Şeması
+
+3 şema vardır.  
+
+1. Normal:  Nesne, dökümandaki yerine göre konumlandırılır. Bu render ağacındaki yerinin DOM ağacındaki yeri gibi olduğu ve kutu tipi ve boyutlara göre düzenlendiği anlamına gelir.
+2. Float: nesne ilk olarak normal akışı gibi düzenlenir. Sonra olabildiğince sağa ya da sola kaydırılır.
+3. Absolute: Nesne render ağacında, DOM ağacında olduğundan farklı şekilde konumlandırılır.
+
+Konumlandırma şemaları “position” özelliği “float” niteliği tarafından ayarlanır.
+- static ve relative normal akışa neden olurabsolute and fixed cause absolute positioning
+- absolute ve fixed kesin konumlandırmaya neden olur.
+
+Static pozisyonda tanımlanan pozisyon yoktur ve varsayılan pozisyon kullanılır. Diğer şemalarda, pozisyon tanımlanır: top, bottom, left, right.  
+
+Kutu düzenleme aşağıdakiler tarafından tanımlanır:
+
+- Kutu Tipi
+- Kutu Boyutu
+- Konumlandırma Şeması
+- Ekran boyuru, resim boyutu gbi harici bilgiler
+
+#### Kutu Tipi
+
+**Block Kutu:** Bir blok oluşturur. Tarayıcı penceresinde kendi dikdörtgeni vardır.
+
+Şekil: Block Kutu
+![](../images/hbw/block_box.png)
+
+**Inline Kutu:** Kendi bloğu yoktur ancak  içeren bir blok içindedir.
+
+Şekil: İnline Kutu
+![](../images/hbw/inline_box.png)
+
+Bloklar birbiri ardına dikey şekilde biçimlendirilir. Inline ise yatay biçimlendirilir.
+
+Şekil: Blok ve İnline Formatı
+![](../images/hbw/block_and_inline_formatting.png)
+
+Inline kutuları bir satır içerisine ya da satır kutularının içerisine konulur. Satırların uzunluğu, kutular tabana hizalandığında –yani bir elemanın alt kısmı daha sonra başka bir kutunun bir alt alanına hizalandığında, en azından en uzun kutu kadar uzun olmalıdır ancak daha da uzun olabilir. Eğer genişlik yeterince uzun değilse, inline kutular birkaç satıra konulacaktır. Genellikle bir paragrafta böyle olur.
+
+Şekil: Satırlar
+![](../images/hbw/lines.png)
+
+#### Konumlandırma
+
+##### Relative
+
+Olağan biçimde  yerleştirilir ve sonra gerekli delta tarafından taşınır.
+
+Şekil: Relative Positioning
+![](../images/hbw/relative_positioning.png)
+
+##### Floats
+
+Float kutu bir satırın soluna veya sağına kaydırılır. İlgiç özelliği şudur: Diğer kutular etrafından akar.
+
+![](../images/hbw/css_floats_code.png)
+
+Şu şekilde görülür:  
+
+![](../images/hbw/css_float.png)
+
+#### Absolute and fixed
+
+Layout(Tasarım Düzeni) normal akışından bağımsız olarak tanımlanır. Eleman, normal akışa katılmaz. Boyutları bulunduğu kaba göredir. Fixed’da, kab görüntü alanı kadardır.
+
+Şekil: Fixed Position
+![](../images/hbw/fixed_positioning.png)
+
+**Not:** Döküman kaydırıldığında sabit kutu hareket etmeyecektir.
+
+
+#### Katmanlı Gösterim
+
+Z-index css özelliği tarafından belirlenir. Bir kutunun üçüncü boyutu temsil eder: "z ekseni" boyunca konumunu.  
+
+Kutular yığınlara ayrılır (Yığın içeriği de denir). Her yığın içinde arkadaki elmanlar ilk olarak çizilir ve  elemanı kullanıcıya daha yakına doğru doğru ilerletir. Örtüşme durumda en öndeki eleman, eski elemanı gizler. Yığınları z-index özelliğine göre sıralanır. "Z-index" özelliği ile kutular yerel bir yığın oluşturur.  Görüntüleme çerçevesi  dış yığına sahiptir.
+
+Örneğin:
+
+![](../images/hbw/layered_representation_code.png)
+
+Sonuç şu şekildedir:  
+
+![](../images/hbw/fixed_positioning_last.png)
+
+Kırmızı div yeşil biçimlendirmeden önde olduğu halde ve regular akış içinde önce çizilmesine rağmen  z-index özelliği daha yüksektir bu yüzden root kutusu tarafından düzenlenen yığınında daha ileri tutulur.
 
 
 
