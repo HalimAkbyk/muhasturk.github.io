@@ -21,7 +21,7 @@ Bu kapsamlı belge *Webkit* ve *Gecko* nın iç yapılarının araştırmasını
   
 
 Kendisi şöyle bir not düşmüş:
-> IE'ın zamanlarında %90 gibi bir oranda hakimiyet sürerken tarayıcılara bir *kapalı kutu* olarak bakılıyor ve saygı duyuluyordu. Fakat şimdi açık kaynak tarayıcılar ile birlikte ______ÇEVİR_________. Tarayıcı çekirdeklerinin içine bakarak web tarayıcılarının içinde ne olduğunu görmek için tam sırası. Daha doğrusu milyonlarca C++ kodunun içinde ne olduğunu...
+> IE'ın zamanlarında %90 gibi bir oranda hakimiyet sürerken tarayıcılara bir *kapalı kutu* olarak bakılıyor ve saygı duyuluyordu. Fakat şimdi, pazar payı yarıdan fazla olan açık kaynaklı tarayıcılarla birlikte tarayıcı çekirdeklerinin altında ne olduğuna bakarak orada ne olduğunu görmek için tam sırası. Daha doğrusu milyonlarca C++ kodunun içinde ne olduğunu...
 
 *Tali* araştırmalarını [kendi sitesinde](http://taligarsiel.com/) yayınladı fakat hepimiz biliyoruz ki daha fazla okuyucu kitlesini hak ediyor. Bu yüzden de çalışmayı düzenleyip burada yeniden yayınladık.
 
@@ -44,7 +44,7 @@ Bu günlerde masaüstünde kullanılan beş ana tarayıcı şunlardır. *Opera*,
 
 
 ###Tarayıcıların Ana İşlevselliği
-Tarayıcının ana görevi bizim seçtiğimiz web kaynağını, sunucuya istek yaparak ve tarayıcının penceresinde bize göstererek sunmaktır. Kaynak genellikle bir HTML belgesi iken PDF, görüntü veya farklı bir içeirk tipi de olabilir. Kaynağın konumu kullanıcı tarafından *URI* (Uniform Resource Identifier = Uniform_____ÇEVİR______ Kaynak Tanımlayıcı) kullanılarak belirtilir. 
+Tarayıcının ana görevi bizim seçtiğimiz web kaynağını, sunucuya istek yaparak ve tarayıcının penceresinde bize göstererek sunmaktır. Kaynak genellikle bir HTML belgesi iken PDF, görüntü veya farklı bir içeirk tipi de olabilir. Kaynağın konumu kullanıcı tarafından *URI* (Uniform Resource Identifier = Uniform Kaynak Tanımlayıcı) kullanılarak belirtilir. 
 
 Tarayıcı yorumlama ve HTML dosyalarının görüntülenmesinin yolu HTML ve CSS beyannamelerinde belirtilmiştir. Bu beyannameler [W3C](http://www.w3.org/) organizasyonu tarafından sürdürülmektedir ve bu organizasyon webin standartlarını oluşturmaktadır. Yıllardır tarayıcılar bu beyannamenin sadece belli bir kısmına uydular ve kendi uzantılarını geliştirdiler. Bunlar web yaratıcıları için ciddi uyumluluk sorunlarına neden oldu. Bugün ise bir çok tarayıcı bu beyannameye az veya çok şekilde uyuyorlar.
 
@@ -64,7 +64,7 @@ Gariptir ki tarayıcıların kullanıcı arayüzleri herhangi bir resmi beyannam
 
 Tarayıcının ana bileşenleri;  
 
-1. **Kullanıcı arayüzü:** Adres çubuğu, ileri-geri butonu, yer imleri menüsü gibi elemanları içerir.  _____________ÇEVİR_____________
+1. **Kullanıcı arayüzü:** Adres çubuğu, ileri-geri butonu, yer imleri menüsü gibi elemanları içerir.
 
 2. **Tarayıcı motoru:**: Rendering motoru ile kullanıcı arayüzü (UI) arasında sıraya koyma aksiyonlarını denetler.
 
@@ -438,14 +438,219 @@ Kutu tipi, node la ilişkili olan "stil özellikleri" nin "display" değeri tara
 
 Element tipi şu şekilde de ele alınabilir: mesela, form kontrol ve masalarının özel frame leri vardır. Webkit te eğer element özel renderer oluşturmak istiyorsa `createRenderer( )` metodunu aşırı sürer. Renderer lar içinde geometrik bilgi olmayan stil objelere işaret ederler. 
 
-#### Render Ağacının DOM Ağacı ile İlişkisi
+#### DOM Ağacına İlişkin Render Ağacı
+
+Renderer'lar DOM elemanlarına karşılık gelir, ama bu ilişki birebir değildir. Görsel olmayan DOM öğeleri render ağacında yerleştirilmeyecektir, buna “head” elemanı örnektir. Aynı zamanda görüntülenen değeri “none” atanan öğeler ağaçta gözükmeyecektir (oysa “saklı” görünümlü öğeler ağaçta gözükecektir).  
+
+Bazı görsel nesnelere karşılık gelen DOM elemanları bulunur. Bunlar genellikle tek bir dikdörtgen çizimiyle tanımlanamayacak, karmaşık yapılı elemanlardır. Örneğin, “select” öğesi 3 elemana sahiptir: biri görüntüleme alanı için, biri açılır liste kutusu için, biri de buton için. Ayrıca genişliğin bir satır için yeterli olmaması sebebiyle, yazı birkaç satıra bölümlendiğinde, yeni satırlar ekstra renderer'lar olarak eklenecektir.  
+
+Çoklu renderer'lara bir diğer örnek bölünmüş HTML'dir. CSS belirlemelerine göre, bir satıriçi eleman, ya sadece blok elemanları, ya da sadece satıriçi elemanları içermelidir. Karışık içerik durumunda, kimliği belirsiz blok renderer'ları, satıriçi elemanları sarmalayacak şekilde yaratılmış olur.  
+
+Bazı render nesneleri DOM düğümlerine karşılık gelir fakat ağaçta aynı yerde değildir. Float'lar ve mutlak konumlandırılmış elemanlar yerleşim akışının dışındadır, ağacın farklı bir kısmına yerleşir, ve gerçek çerçeveye eşleştirilirler. Yer tutucu çerçeve olması gereken yerdedir.  
+
+Şekil: Render ağacı ve ilişkili DOM ağacı (3.1). “Viewport” ilk kapsama bloğudur. WebKit'te bir “RenderView” nesnesi olacaktır.
+![](../images/hbw/corresponding_DOM_tree.png)
+
+#### Ağacı Oluşturma Akışı
+
+Firefox'ta sunum, DOM güncellemeleri için dinleyici olarak kayıtlıdır. Sunum, çerçeve yaratma görevini FrameConstructor'a verir. Constructor stili çözümler (bkz. stil hesaplama) ve çerçeve yaratır.  
+
+WebKit'te stili çözümleme ve renderer yaratma işlemi “attachment” olarak adlandırılır. Her DOM  düğümünün “attach” metodu vardır. Attachment eş zamanlıdır, DOM ağacına düğüm ilavesi için yeni düğümün “attach” metodu çağrılır.  
+
+html ve body etiketlerinin işlenmesi, render ağacı kökünün yapımında sonuçlanır. Kök render nesnesi, CSS belirlemesinin kapsama bloğu tanımlamasına benzer: en üst blok diğer tüm blokları içerir. Onun boyutları görünüm alanıdır: tarayıcı penceresi alan boyutlarını görüntüler. Firefox onu ViewPortFrame, ve WebKit onu RenderView olarak adlandırır. Bu, dökümanın işaret ettiği render nesnesidir. Ağacın geri kalanı DOM düğüm yerleşimi ile yapılandırılır.  
+
+[İşleme modeli üzerinde CSS2 belirlemesi](http://www.w3.org/TR/CSS21/intro.html#processing-model) ne bakınız.
+
+#### Stil Hesaplama
+
+Render ağacını inşa etme, her bir render nesnesinin görsel özelliklerini hesaplamayı gerektirir. Bu, her bir elemanın stil özelliklerini hesaplamayla yapılır.  
+
+Stil, çeşitli kökenlerin stil sayfalarını, HTML'deki satıriçi stil elemanlarını ve görsel özellikleri içerir (“bgcolor” özelliği gibi). Sonradan, eşleşen CSS stil özelliklerine çevrilir.  
+
+Stil sayfalarının kökenleri tarayıcının varsayılan stil sayfalarıdır. Stil sayfaları, sayfa yazarı ve kullanıcı stil sayfaları tarafından sağlanır – bunlar tarayıcı kullanıcıları tarafından sağlanan stil sayfalarıdır (tarayıcılar size favori stillerinizi tanımlama izni verir. Mesela bu Firefox'ta; stil sayfası “Firefox Profile” klasörüne yerleştirilerek yapılır).  
+
+Stil hesaplama birkaç zorluk getirir:  
+
+1. Stil verisi çok geniş bir yapıdır, sayısız stil özelliği tutar, bu bellek sorunlarına neden olabilir.
+
+2. Her bir eleman için eşleşen kuralları bulmak, eğer en iyi şekle getirilmediyse performans sorunlarına sebep olabilir. Her elemanın eşleşenini bulmak için tüm kurallar listesinin içinden geçmek zor bir görevdir. Karmaşık yapılı olabilen seçiciler, umut verici görünen ama nafile olduğu kanıtlanmış bir eşleşme sürecinin başlamasına yol açabilir.
+
+Mesela aşağıdaki bileşik seçici:
+
+```css
+div div div div{
+  ...
+}
+```
+
+`<div>`'e uygulanan kurallar, onun 3 div'in soyundan geldiğini ifade eder. Verilen bir `<div>` elemanı için bu kuralın uygulanıp uygulanmadığına bakmak istediğinizi varsayın. Kontrol için ağaçtan belli bir yol seçersiniz. Sadece iki div'in olduğunu ve bunun kurala uymadığını bulmak için düğüm ağacının içinden geçmeye ihtiyaç duyabilirsiniz. Sonra mecburen ağaçtaki diğer yolları denersiniz.
+
+3. Kurallar hiyerarşisini tanımlayan, oldukça karmaşık ve katlı kuralları kapsayan kuralları uygulamak.  
+
+Tarayıcıların bu sorunlarla nasıl yüzleştiğini görelim:
+
+#### Stil Verisini Paylaşma
+
+WebKit düğümleri, kaynağını stil nesnelerinden alır (RenderStyle). Bazı durumlarda düğümler bu nesneleri paylaşabilir. Düğümler kardeş veya kuzenlerdir, ve:
+
+1. Elemanlar aynı fare durumunda olmalıdır (örneğin biri :hover durumunda değilken diğeri de olamaz)  
+2. Hiçbir elemanın id'si olmamalıdır  
+3. Etiket isimleri eşleşmelidir  
+4. Sınıf özellikleri eşleşmelidir  
+5. Haritalanmış özellik kümesi tamamıyla aynı olmalıdır  
+6. Link durumları eşleşmelidir  
+7. Odaklanma durumları eşleşmelidir  
+8. Hiçbir eleman özellik seçicilerden etkilenmemelidir. Etkilenme; seçicinin de dahil olduğu herhangi bir konumdaki bir özellik seçiciyi kullanan bir seçici eşleşmesi bulundurma olarak tanımlanır.  
+9. Elemanlarda hiç satıriçi stil özelliği olmamalıdır  
+10. Kullanımda olan kardeş seçiciler hiç olmamalıdır. Herhangi bir kardeş seçiciyle karşılaşıldığında WebCore basitçe genel şalteri indirir, ve sunulmakta olan tüm döküman için stil paylaşımını devre dışı bırakır. Buna + seçicisi ve :first-child, :last-child gibi seçiciler dahildir.  
+
+#### Firefox Kural Ağacı
+
+Firefox'un daha basit stil hesaplamak için iki eksta ağacı bulunur: kural ağacı ve stil bağlam ağacı. WebKit'in de ayrıca stil nesneleri vardır ama onlar stil bağlam ağacındaki gibi ağaçta bulunmazlar, sadece DOM düğümü ilgili stili işaret eder.
+
+Şekil: Firefox Stil Bağlam Aracı
+![](firefox_style_context_tree.png)
+
+Stil bağlamları bitiş değerleri içerir. Bu değerler, tüm eşleşme kuralları düzgün sırayla uygulanarak ve mantıksaldan somut değerlere dönüştürme işlemleri yapılarak hesaplanır. Örneğin, mantıksal değer ekranın bir yüzde oranıysa, hesaplanacak ve mutlak birimlere çevrilecektir. Kural ağacı fikri ise, gerçekten zekicedir. Bu değerlerin düğümler arasında tekrar hesaplanmadan paylaşılması olanağını sağlar. Bu aynı zamanda bellek alanı kurtarır.  
+
+Eşlenmiş tüm kurallar bir ağaçta tutulur. Ağaçtaki alt düğümler daha yüksek önceliğe sahiptir. Ağaç, bulunmuş kural eşleşmeleri için tüm yolları içerir. Kuralları tutma işi tembelce yapılır. Ağaç, her düğümü için en başta hesaplanmaz, sadece düğüm stilinin hesaplanmasına ihtiyaç duyulduğunda, hesaplanmış yollar ağaca eklenir.  
+
+Maksat, ağaç yollarını, sözlükteki kelimeler gibi görmektir. Aşağıdaki kural ağacını önceden hesaplamış olduğumuzu düşünelim:  
+
+![](../images/hbw/character_tree.png)
+
+Diyelim ki içerik ağacındaki başka bir eleman için kuralları eşleştirmemiz gerekiyor, ve bulduğumuz eşleşmiş kurallar sırasıyla B-E-I. Ağaçta bu yolumuz şimdiden bulunuyor, çünkü zaten A-B-E-I-L yolunda hesap yapmıştık. Şimdi yapacak daha az işimiz kaldı.
+
+Ağacın bizi nasıl işten kurtardığını görelim.
+
+~~EKSİK~~
 
 
+#### Kural Ağacını (Rule Tree) Kullanarak Stil İçeriklerini Hesaplama
 
-###################################
-###################################
-###################################
+Belli bir eleman için stil içeriği hesaplanırken,  ilk olarak kural ağacının yolu(path) hesaplanır veya varolan biri kullanırız. Daha sonra yeni stil içeriğimizdeki yapıları doldurmak için, kuralları yola uygulamaya başlarız. Yolun alt düğümünde başlar – yüksek önceliğe sahip olan bir düğüm (genellikle en özel seçiçici)-  ve yapı dolana kadar ağaç döndürülür. Bu kural düğümü yapısı için hiçbir belirtim yoksa, o zaman büyük ölçüde optimize edebiliriz – tamamen ve başitçe belirtime işaret eden düğümü bulana kadar ağaçta yukarı çıkarız –bu en iyi optimizaysondur – tüm yapı paylaşılır. Hesaplama son değerleri ve bellek kaydedilir.  
 
+Eğer kismi tanım bulursak yapı dolana kadar ağaçta yukarı çıkarız.  
+
+Eğer yapımız için hiçbir tanım bulamazsak , bu durumda yapı “inherit(miras)” tiplidir, yapının parentını  context ağacında gösteririz. Bu durumda ayrıca paylaşılan yapılarda başardık. Eğer sıfırlama yapısıysa varsayılan değerler kullanılır.  
+
+Eğer en beliri düğüm değerlerini eklerse, gerçek değerlere dönüştürmek için fazladan hesaplamalar yapmalıyız. Saha sonra, ağac düğümlerinde sonucu önyükleriz ve böylelikler çocuk düğümler (children) tarafından kullanabiliriz.  
+
+Bu durumda, bir eleman aynı ağaç düğümüne işaret eden bir kardeşe veya bir erkek kardeşe sahiptir ve tüm yapı içeriği aralarında paylaşılır.  
+
+Bir örnek inceleyelim: Aşağıdaki HTML parçasına sahip olduğumuzu varsayalım.  
+
+```html
+<html>
+  <body>
+    <div class="err" id="div1">
+      <p>
+        this is a <span class="big"> big error </span>
+        this is also a
+        <span class="big"> very  big  error</span> error
+      </p>
+    </div>
+    <div class="err" id="div2">another error</div>
+  </body>
+</html>
+```
+
+Aşağıdaki kurallarımız olsun.  
+
+![](../images/hbw/computing_css_rule.png)
+
+Basitleştirmek için yalnızca iki yapıyı doldurmamız gerektiğini varsayalım : renk yapısı ve margin yapısı. Renk yapısı yalnızca bir eleman içerir : rengi. Margin yapısı 4 tarafı içerir.  
+
+Sonuç kural ağacı aşağıdaki gibi gözükür ( Düğümler, düğüm isimleriyle işaretlenir: O noktada kural sayısını işaret eder):  
+
+Şekil: Kural Ağacı
+![](../images/hbw/rule_tree.png)
+
+İçerik ağacı ise şu şekilde görülür (Düğüm isimleri: kural düğümünü işaret eder):  
+
+Şekil: İçerik Ağacı
+![](../images/hbw/context_tree.png)
+
+HTML’i ikinci bir div’e ayırdığımızı varsayalım. Bu düğüm için stil içeriğini oluşturmız ve stil yapısını doldurmamız gerekecektir. 
+
+Kuralları birleştireceğiz ve `<div>` için birleştirilen kuralların 1,2 ve  olduğunu fark edeceğiz. Bunun anlamı, bu yolun ağaçta önceden var olduğu ve bizim bunu kullanabileceğimizdir ve sadece kural 6 için bir düğüm eklememiz gerekecek (kural ağacında düğüm F). Stil içeriğini oluşturacağız ve içerik ağacına yerleştireceğiz. Yeni stil içeriği kural ağacında düğüm Fyi gösterecektir.
+
+Şimdi stil yapısını doldurmamız gerekecek.  Margin yapısını doldurarak başlayacağız. Son kural düğümü (F) margin yapısına eklenmediği sürece, ağaçta, bir önceki eklenen düğümde önblleğe alınmış hesaplı yapı bulana kadar yukarı çıkabiliriz ve kullanabiliriz. Margin kuralında en üst seviye düğüm olarak B’yi bulacağız.  
+
+Renk yapısı için bir tanımlamaya sahibiz,  bu nedenle önbelleğe alınmış yapıyı kullanamayız. Renk yalnızca bir niteliğe sahip olduğu sürece diğer nitelikleri doldurmak için aaçta yukarı gidemeyiz. Son değeri hesaplayacapız (RGB’den stringe döndürmek gibi ) ve düğümdeki hesaplanan yapıyı önbelleğe alacağız.  
+
+İkinci `<span>` elemanı üzerinde çalışmak kolaydır. Kuralları birleştireceğiz ve kural G’yi gösterdiği sonucuna varacağız, bir önceki span gibi. Aynı düğümü gösteren kardeşler olduğu sürece, tüm stil içeriğini paylaşacağız ve bir önceki span’ın içeriğini göstereceğiz.  
+
+İnherit kurallar içeren yapı için önbelleğe alma  context ağacında yapılır (renk özelliği aslında inherittir, ancak Firefox sıfırlama gibi dayvaranır ve kural ağacında önbelleğe alır)
+
+Örneğin, eğer bir paragrafta font için kural eklersek:
+
+```css
+p {font-family: Verdana; font size: 10px; font-weight: bold}
+```
+
+Context ağacındaki  div elemanının çocuğu olan paragraf elemanı, kendi üst elemanıyla aynı font yapısını paylaşabilir. Bu, paragraf için belirli bir font özelliği olmadığında gerçekleşir.  
+
+WebKit’te, kural ağacına sahip olmayan, birleştirilmiş tanımlamalar dört kez döndürülür. İlkinde, önemli olmayan  yüksek öncelikli özellikler uygulanır (özellikler ilk olarak uygulanmalı çünkü diğerleri ona bağlıdır), daha sonra yüksek öncelikli önemli, normal öncelikli önemsiz, normal öncelikli önemli kurallar uygulanır. Bunun anlamı, özellikler doğru kademeli sıra ile birkaç kez görüntülenerek çözülür. Sonuncular kazanır.  
+
+Özetle: Stil nesnelerini paylaşmak (tamamını yada bir bölümünü) aşağıdaki stil hesaplama zorluklarından  1(Style) ve 3(Applying ) numaralı problemleri çözer. Firefox kural ağacı ayrıca özellikleri doğru sırada uygulamaya yardımcı olur. 
+
+
+#### Stil Şablonlarının Sıralaması
+
+Stil özelliğinin bildirilmesi birden fazla stil şablonunda olabileceği gibi, aynı şablon içerisinde birden fazla geçebilir. Bunun anlamı şudur ki kuralların uygulanış sırası çok önemlidir. Bu **cascade** sıralaması olarak adlandırılır. CSS2 şartnamesine göre cascade sıralaması düşükten yükseğe doğru:
+
+1. Tarayıcı bildirimleri
+2. Kullanıcı normal bildirimleri
+3. Geliştirici normal bildirimleri
+4. Geliştirici önemli bildirimleri
+5. Kullanıcı önemli bildirimleri
+
+Tarayıcı bildirimleri düşük öneme sahiptir ve kullanıcı eğer bildirim önemli olarak işaretlenmiş ise geliştiriciyi ezebilir. Aynı sıralamadaki bildirimler specificity tarafından sıralanır. HTML in görsel öznitelikleri eşleşen CSS bildirimlerine dönüştürülür. Bu geliştirici kuralı gibi yapılır ve düşük önceliğe sahiptir. 
+
+#### Specificity (Özel Etken Oranı / Özgüllük)
+
+Seçicilerin specificity leri [CSS2 şartnamesinde](http://www.w3.org/TR/CSS2/cascade.html#specificity) aşağıdaki gibi tanımlanmıştır. 
+
+- a= Eğer seçili kuralı ile değil de `style` özniteliği ile bildirim varsa 1,
+aksi taktirde 0.
+- b= Seçicide yer alan ID özniteliğinin (attribute) sayısı
+- c= Seçicide yer alan sözde sınıfların (pseudo) ve özniteliklerin sayısı 
+- d= Seçicide yer alan sözde elementlerin ve element isimlerinin sayısı 
+
+Bu dört a-b-c-d numaranın birleşimi bize specificity verir.
+
+İhtiyacımız olan sayı tabanı bu kategoriler içerisindeki en büyük numara belirler. Örneğin a=14 ise hexadecimal taban kullanabiliriz.
+
+Birkaç örnek:  
+
+```css
+ *             {}  /* a=0 b=0 c=0 d=0 -> specificity = 0,0,0,0 */
+ li            {}  /* a=0 b=0 c=0 d=1 -> specificity = 0,0,0,1 */
+ li:first-line {}  /* a=0 b=0 c=0 d=2 -> specificity = 0,0,0,2 */
+ ul li         {}  /* a=0 b=0 c=0 d=2 -> specificity = 0,0,0,2 */
+ ul ol+li      {}  /* a=0 b=0 c=0 d=3 -> specificity = 0,0,0,3 */
+ h1 + *[rel=up]{}  /* a=0 b=0 c=1 d=1 -> specificity = 0,0,1,1 */
+ ul ol li.red  {}  /* a=0 b=0 c=1 d=3 -> specificity = 0,0,1,3 */
+ li.red.level  {}  /* a=0 b=0 c=2 d=1 -> specificity = 0,0,2,1 */
+ #x34y         {}  /* a=0 b=1 c=0 d=0 -> specificity = 0,1,0,0 */
+ style=""          /* a=1 b=0 c=0 d=0 -> specificity = 1,0,0,0 */
+```
+
+##### Kuralların Sıralanması
+
+Kurallar eşleştirildikten sonra, cascade kurallarına göre sıralanırlar. Webkit küçük listeler için **bubble sort**, büyük listeler için ise **merge sort** kullanmaktadır. Webkit sıralama işlemini kurallar için `>` operatörünü ezerek (override) uygulamaktadır. 
+
+```
+static bool operator >(CSSRuleData& r1, CSSRuleData& r2)
+{
+    int spec1 = r1.selector()->specificity();
+    int spec2 = r2.selector()->specificity();
+    return (spec1 == spec2) : r1.position() > r2.position() : spec1 > spec2;
+}
+```
+#### Kademeli Süreç
+Webkit, bütün yüksek seviyeli stil şablonları yüklendi ise (@imports dahil) işaretlemek için bayrakları kullanır. Eklendiği zaman tam olarak yüklenmemiş stiller varsa yer tutucular kullanılır ve belgede işaretlenir ve stil şablonu yüklendiğinde yeniden hesaplanacaktır. 
 
 ### Tasarım Düzeni (Layout)
 Renderer oluşturulduğunda ve ağaca eklendiğinde o, bir pozisyona ve boyuta sahip olmaz. Bu pozisyon ve boyut değerlerinin hesaplanması tasarım düzeni (**layout**)” ve **reflow** olarak adlandırılır.
@@ -674,7 +879,12 @@ Olağan biçimde  yerleştirilir ve sonra gerekli delta tarafından taşınır.
 
 Float kutu bir satırın soluna veya sağına kaydırılır. İlgiç özelliği şudur: Diğer kutular etrafından akar.
 
-![](../images/hbw/css_floats_code.png)
+```html
+<p>
+  <img style="float: right" src="images/image.gif" width="100" height="100">
+  Lorem ipsum dolor sit amet, consectetuer...
+</p>
+```
 
 Şu şekilde görülür:  
 
@@ -698,7 +908,25 @@ Kutular yığınlara ayrılır (Yığın içeriği de denir). Her yığın için
 
 Örneğin:
 
-![](../images/hbw/layered_representation_code.png)
+```html
+<style type="text/css">
+      div {
+        position: absolute;
+        left: 2in;
+        top: 2in;
+      }
+</style>
+
+<p>
+    <div
+         style="z-index: 3;background-color:red; width: 1in; height: 1in; ">
+    </div>
+    <div
+         style="z-index: 1;background-color:green;width: 2in; height: 2in;">
+    </div>
+ </p>
+```
+
 
 Sonuç şu şekildedir:  
 
